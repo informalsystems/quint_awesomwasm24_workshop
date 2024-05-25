@@ -1,0 +1,17 @@
+# Rust artifacts
+/target
+**/*.rs.bk
+
+# Cargo artifacts
+Cargo.lock
+Cargo.toml.orig
+.cargo/
+
+
+# Editor and IDE artifacts
+*.editorconfig
+
+
+# Wasm artifacts and cache
+artifacts/
+cache/
