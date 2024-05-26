@@ -15,7 +15,7 @@ module ideaguided_ctf01 {
     // import commonSpells.* from "../spells/commonSpells"
     import rareSpells.* from "spells/rareSpells"
     
-
+    // VARIABLES
     // state of the contract that is being modeled
     var contract_state: ContractState
     // state of the chain: this could in general include many aspects of the environment 
@@ -32,7 +32,7 @@ module ideaguided_ctf01 {
     // The state machine in Quint is defined by actions: functions that update state variables.
 
 
-    
+    // INITIAL STATE
     // The initial state: a special action which defines state variables at the beginning of the model execution
     action init = all {
         
@@ -53,6 +53,7 @@ module ideaguided_ctf01 {
         }
     }
 
+    // MODEL EVOLUTION
     // Definition of the transition function
     action step = all {   
 
@@ -114,7 +115,7 @@ module ideaguided_ctf01 {
         }
     }  
 
-
+    // ACTIONS
     action advance_time_lock_period = all { 
         chain_state' = {
             time: chain_state.time + LOCK_PERIOD
@@ -129,8 +130,7 @@ module ideaguided_ctf01 {
         contract_state' = contract_state
     }
 
-    
-    action deposit(sender: Addr, amount: int): bool =
+    action deposit(sender: Addr, amount: int): bool = {
         all {
             // this is a choice: we forbid depositing non-positive amounts
             // (we could have allow it - this would allow us testing for more errors)
@@ -147,31 +147,30 @@ module ideaguided_ctf01 {
                 stepNumber: step_info.stepNumber + 1
             }
         }
-
-    action withdraw(sender: Addr, ids: List[LockupId]): bool = 
-        
+    }        
+    
+    action withdraw(sender: Addr, ids: List[LockupId]): bool = {
         all {
-            // since the ChainState only models time, we do not update it here:
-            // one block time is negligible compared to the unlock period (1 day).
-            // Thus, we only model time advancing in the action `advance_time_lock_period`.
-            chain_state' = chain_state,
+        // since the ChainState only models time, we do not update it here:
+        // one block time is negligible compared to the unlock period (1 day).
+        // Thus, we only model time advancing in the action `advance_time_lock_period`.
+        chain_state' = chain_state,
 
-            // update the info for the adapter 
-            step_info' = {
-                actionTaken: "withdraw",
-                msgArgs: WithdrawArgs({sender: sender, lockup_ids: ids}),
-                actionSuccessful: true,
-                actionErrorDescription: "",
-                stepNumber: step_info.stepNumber + 1
-            },
+        // update the info for the adapter 
+        step_info' = {
+            actionTaken: "withdraw",
+            msgArgs: WithdrawArgs({sender: sender, lockup_ids: ids}),
+            actionSuccessful: true,
+            actionErrorDescription: "",
+            stepNumber: step_info.stepNumber + 1
+        },
 
-            // update the contract state by using the pure transformation function of the state
-            contract_state' = withdraw_pure(contract_state, sender, ids)                                
+        // update the contract state by using the pure transformation function of the state
+        contract_state' = withdraw_pure(contract_state, sender, ids)                                
         }
+    }
 
-
-
-
+    // HELPERS
     // ------------------------------------
     // --- Pure Transformation Function ---
     // ------------------------------------
@@ -205,12 +204,8 @@ module ideaguided_ctf01 {
             lockups: new_lockups
         }
     }
-
     
-    
-
-    
-    pure def deposit_pure(c_state: ContractState, sender: Addr, amount: int, release_time: Time): ContractState =
+    pure def deposit_pure(c_state: ContractState, sender: Addr, amount: int, release_time: Time): ContractState = {
         val new_balance = c_state.contract_balance + amount
         val added_lockup = {            
             amount: amount,
@@ -224,8 +219,11 @@ module ideaguided_ctf01 {
             contract_balance: new_balance,
             lockups: c_state.lockups.put(c_state.free_id, added_lockup)            
         }
+    }
 
 
+    
+    // INVARIANTS
     // invariant that the contract balance never goes below its initial value
     def contract_balance_ok = contract_state.contract_balance >= INIT_CONTRACT_BALANCE
 
