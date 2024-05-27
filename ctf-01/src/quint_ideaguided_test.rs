@@ -2,6 +2,7 @@ pub mod state_structs {
     use num_bigint::BigInt;
     use serde::Deserialize;
     use std::collections::HashMap;
+    use std::fs;
 
     
     #[derive(Clone, Debug, Deserialize)]    
@@ -63,6 +64,8 @@ pub mod state_structs {
 
 #[cfg(test)]
 pub mod tests {
+    use std::fs;
+
     use itf::trace_from_str;
     use crate::{
         contract::{DENOM, LOCK_PERIOD, MINIMUM_DEPOSIT_AMOUNT},
@@ -156,121 +159,124 @@ pub mod tests {
             contract_addr: Addr::unchecked(""),
         };
 
+        let all_test_traces = ["../generatedTraces/trace_ideaguided.itf.json"];
+
+        for test_trace in all_test_traces {
         // load trace data
-        let data = include_str!("../../generatedTraces/trace_ideaguided.itf.json");
-        let trace: itf::Trace<State> = trace_from_str(data).unwrap();
-        
-        for s in trace.states {
-            let step_info = &s.value.step_info;
-            println!("Step number: {:?}", step_info.step_number);
+            let data = fs::read_to_string(test_trace).unwrap();
+            let trace: itf::Trace<State> = trace_from_str(&data).unwrap();
             
-            match step_info.action_taken.as_str() {    
-                "init" => {
-                    // this arm corresponds to the proper_instantiate function from the integration test
-                    println!("Initializing contract.");
+            for s in trace.states {
+                let step_info = &s.value.step_info;
+                println!("Step number: {:?}", step_info.step_number);
+                
+                match step_info.action_taken.as_str() {    
+                    "init" => {
+                        // this arm corresponds to the proper_instantiate function from the integration test
+                        println!("Initializing contract.");
 
-                    // init contract
-                    
-                    let msg = InstantiateMsg { count: 1i32 };
-                    test_state.contract_addr = app
-                        .instantiate_contract(
-                            code_id,
-                            Addr::unchecked(ADMIN),
-                            &msg,
-                            &[],
-                            "test",
-                            None,
-                        )
-                        .unwrap();
-
-
-                    // mint funds to contract
-                    app = mint_tokens(app, test_state.contract_addr.to_string(), INIT_CONTRACT_COINS);
-                    // mint funds to users
-                    app = mint_tokens(app, USER_A.to_string(), MINIMUM_DEPOSIT_AMOUNT * Uint128::new(10000));
-                    app = mint_tokens(app, USER_B.to_string(), MINIMUM_DEPOSIT_AMOUNT * Uint128::new(10000));
-                    app = mint_tokens(app, USER_C.to_string(), MINIMUM_DEPOSIT_AMOUNT * Uint128::new(10000));
-                    println!("Contract initialized. Funds are {:?}", app.wrap().query_balance(USER_A.to_string(), DENOM).unwrap());
-                } 
-                "advance_time" => {
-                    println!(
-                        "clock is advancing for {} seconds (LOCK_PERIOD)",
-                        LOCK_PERIOD
-                    );
-
-                    // fast forward LOCK_PERIOD seconds
-                    app.update_block(|block| {
-                        block.time = block.time.plus_seconds(LOCK_PERIOD);
-                    });                    
-                } 
-
-                "deposit" => {
-                    let deposit_args = match &step_info.msg_args {
-                        MsgArgs::DepositArgs(deposit_args) => deposit_args,
-                        _ => panic!("Invalid MsgArgs"),
-                    };
-                    println!("deposit_args: {:?}", deposit_args);
-                    let msg = ExecuteMsg::Deposit {};
-                    let sender = Addr::unchecked(&deposit_args.sender);
-                    let res = app.execute_contract(
-                        sender.clone(),
-                        test_state.contract_addr.clone(),
-                        &msg,
-                        &[coin(deposit_args.amount.to_u128().unwrap(), DENOM)],
-                    );
-
-                    if step_info.action_successful {
-                        println!("Deposit successful");
-                        assert!(res.is_ok());                            
-                    } else {
-                        println!("Deposit failed");
-                        assert!(res.is_err());                        
-                    }
-                    
-                    
-                }
-                "withdraw" => {
-                    if let MsgArgs::WithdrawArgs(withdraw_args) = &step_info.msg_args {
-                        let ids: Vec<u64> = withdraw_args                            
-                            .lockup_ids
-                            .iter()
-                            .map(|id| id.to_u64().unwrap())
-                            .collect();
-
-                        let sender = &withdraw_args.sender;
-                        println!("user {} withdrawing from {:?}", sender, ids);
-
-                        // send the withdrawal message
-                        let msg = ExecuteMsg::Withdraw { ids };
-                        let res = app.execute_contract(
-                            Addr::unchecked(sender),
-                            test_state.contract_addr.to_owned(),
-                            &msg,
-                            &[],
-                        );
+                        // init contract
                         
+                        let msg = InstantiateMsg { count: 1i32 };
+                        test_state.contract_addr = app
+                            .instantiate_contract(
+                                code_id,
+                                Addr::unchecked(ADMIN),
+                                &msg,
+                                &[],
+                                "test",
+                                None,
+                            )
+                            .unwrap();
+
+
+                        // mint funds to contract
+                        app = mint_tokens(app, test_state.contract_addr.to_string(), INIT_CONTRACT_COINS);
+                        // mint funds to users
+                        app = mint_tokens(app, USER_A.to_string(), MINIMUM_DEPOSIT_AMOUNT * Uint128::new(10000));
+                        app = mint_tokens(app, USER_B.to_string(), MINIMUM_DEPOSIT_AMOUNT * Uint128::new(10000));
+                        app = mint_tokens(app, USER_C.to_string(), MINIMUM_DEPOSIT_AMOUNT * Uint128::new(10000));
+                        println!("Contract initialized. Funds are {:?}", app.wrap().query_balance(USER_A.to_string(), DENOM).unwrap());
+                    } 
+                    "advance_time" => {
+                        println!(
+                            "clock is advancing for {} seconds (LOCK_PERIOD)",
+                            LOCK_PERIOD
+                        );
+
+                        // fast forward LOCK_PERIOD seconds
+                        app.update_block(|block| {
+                            block.time = block.time.plus_seconds(LOCK_PERIOD);
+                        });                    
+                    } 
+
+                    "deposit" => {
+                        let deposit_args = match &step_info.msg_args {
+                            MsgArgs::DepositArgs(deposit_args) => deposit_args,
+                            _ => panic!("Invalid MsgArgs"),
+                        };
+                        println!("deposit_args: {:?}", deposit_args);
+                        let msg = ExecuteMsg::Deposit {};
+                        let sender = Addr::unchecked(&deposit_args.sender);
+                        let res = app.execute_contract(
+                            sender.clone(),
+                            test_state.contract_addr.clone(),
+                            &msg,
+                            &[coin(deposit_args.amount.to_u128().unwrap(), DENOM)],
+                        );
+
                         if step_info.action_successful {
-                            println!("Withdraw successful");
+                            println!("Deposit successful");
                             assert!(res.is_ok());                            
                         } else {
-                            println!("Withdraw failed");
-                            assert!(res.is_err());
-                            
+                            println!("Deposit failed");
+                            assert!(res.is_err());                        
                         }
                         
-                    } else 
-                    {
-                        println!("WITHDRAW: Wrong message arguments");
-                        assert!(false);  
+                        
                     }
+                    "withdraw" => {
+                        if let MsgArgs::WithdrawArgs(withdraw_args) = &step_info.msg_args {
+                            let ids: Vec<u64> = withdraw_args                            
+                                .lockup_ids
+                                .iter()
+                                .map(|id| id.to_u64().unwrap())
+                                .collect();
+
+                            let sender = &withdraw_args.sender;
+                            println!("user {} withdrawing from {:?}", sender, ids);
+
+                            // send the withdrawal message
+                            let msg = ExecuteMsg::Withdraw { ids };
+                            let res = app.execute_contract(
+                                Addr::unchecked(sender),
+                                test_state.contract_addr.to_owned(),
+                                &msg,
+                                &[],
+                            );
+                            
+                            if step_info.action_successful {
+                                println!("Withdraw successful");
+                                assert!(res.is_ok());                            
+                            } else {
+                                println!("Withdraw failed");
+                                assert!(res.is_err());
+                                
+                            }
+                            
+                        } else 
+                        {
+                            println!("WITHDRAW: Wrong message arguments");
+                            assert!(false);  
+                        }
+                        
+                    }
+                    _ => panic!("Invalid action taken"),
                     
                 }
-                _ => panic!("Invalid action taken"),
-                
+                compare_state(&test_state, &app, &s.value);
+                println!("-----------------------------------");
             }
-            compare_state(&test_state, &app, &s.value);
-            println!("-----------------------------------");
-        }
-        
+        }    
     }
 }
