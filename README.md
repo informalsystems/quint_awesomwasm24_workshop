@@ -31,3 +31,4 @@ If you want to try out Quint before the workshop, have a look at [Quint tutorial
  - [Quint Cheatsheet](https://github.com/informalsystems/quint/blob/main/doc/quint-cheatsheet.pdf)
  - [REPL Tutorial](https://github.com/informalsystems/quint/blob/main/tutorials/repl/repl.md)
  - [Example Quint Models](https://github.com/informalsystems/quint/tree/main/examples)
+ - [cosmwasm-to-quint](https://github.com/informalsystems/cosmwasm-to-quint/tree/main)
