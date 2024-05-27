@@ -56,4 +56,8 @@ num-traits = "0.2.17"
 anyhow = "1.0.83"
 
 [dev-dependencies]
+anyhow = "1.0.83"
 cw-multi-test = "0.16.2"
+itf = "0.2.4"
+num-bigint = "0.4.4"
+num-traits = "0.2.17"

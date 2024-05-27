@@ -67,11 +67,13 @@ pub mod tests {
     use std::fs;
 
     use itf::trace_from_str;
-    use crate::{
+    use oaksecurity_cosmwasm_ctf_01::{
         contract::{DENOM, LOCK_PERIOD, MINIMUM_DEPOSIT_AMOUNT},
-        msg::{ExecuteMsg, InstantiateMsg, QueryMsg},        
-        quint_ideaguided_test::state_structs::*,       
+        msg::{ExecuteMsg, InstantiateMsg, QueryMsg},  
+        contract,
+        state          
     };
+    use crate::state_structs::*;       
     use cosmwasm_std::{coin, Addr, Uint128};
     use cw_multi_test::{App, AppResponse, ContractWrapper, Executor};
     use num_traits::ToPrimitive;
@@ -124,7 +126,7 @@ pub mod tests {
         for (id, trace_lockup) in &state.contract_state.lockups {
             let id = id.to_u64().unwrap();
             let msg = QueryMsg::GetLockup { id };
-            let lockup: crate::state::Lockup = app
+            let lockup: state::Lockup = app
                 .wrap()
                 .query_wasm_smart(test_state.contract_addr.to_owned(), &msg)
                 .unwrap();
@@ -148,9 +150,9 @@ pub mod tests {
     fn model_test() {
         let mut app = App::default();
         let code = ContractWrapper::new(
-            crate::contract::execute,
-            crate::contract::instantiate,
-            crate::contract::query,
+            contract::execute,
+            contract::instantiate,
+            contract::query,
         );
         let code_id = app.store_code(Box::new(code));
 
@@ -161,6 +163,9 @@ pub mod tests {
 
         let all_test_traces = ["../generatedTraces/trace_ideaguided.itf.json"];
 
+        
+        
+        
         for test_trace in all_test_traces {
         // load trace data
             let data = fs::read_to_string(test_trace).unwrap();
