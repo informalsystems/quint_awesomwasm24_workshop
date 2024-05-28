@@ -32,3 +32,7 @@ If you want to try out Quint before the workshop, have a look at [Quint tutorial
  - [REPL Tutorial](https://github.com/informalsystems/quint/blob/main/tutorials/repl/repl.md)
  - [Example Quint Models](https://github.com/informalsystems/quint/tree/main/examples)
  - [cosmwasm-to-quint](https://github.com/informalsystems/cosmwasm-to-quint/tree/main)
+
+
+## Workshop Examples
+For a detailed walkthrough through the CTF-01 example showed in the workshop, go through [walkthrough.md](./walkthrough.md)
